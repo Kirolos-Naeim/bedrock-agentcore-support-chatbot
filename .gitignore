@@ -1,0 +1,10 @@
+# Python environments and bytecode
+.venv/
+**/.venv/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+
+# Local AWS runtime configuration and generated evaluation data
+starter/agentcore_config.json
+starter/output_eval_dataset.jsonl
