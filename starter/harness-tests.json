@@ -7,7 +7,7 @@
     },
     {
       "id": "complete-checkout-bug-report",
-      "prompt": "The checkout page crashes when I click Pay. I add an item to the cart, go to checkout, and click Pay. I am using Chrome 120 on macOS Sonoma on a MacBook.",
+      "prompt": "Please file a bug report. Description: The checkout page crashes when I click Pay. Steps to reproduce: Add an item to the cart, go to checkout, and click Pay. Environment: Chrome 120 on macOS Sonoma using a MacBook.",
       "expected": "Submit the bug report using the provided description, reproduction steps, and environment. Report success only if the tool returns a ticket ID."
     },
     {
