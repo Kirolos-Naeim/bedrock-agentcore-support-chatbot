@@ -1,0 +1,53 @@
+Customer Support Chatbot — recorded chat.py excerpts
+
+These excerpts reproduce terminal output supplied during the project. They
+come from different runs; the earlier out-of-scope response is identified below.
+They are observations of actual output, including known prompt violations.
+
+1. Covered FAQ question and bug report
+Source: run shown in screenshots/Screenshot From 2026-09-27 23-22-19.png
+Session: e46082f0-fc25-41d3-8ffc-39b7e417b3e1-support-chat
+
+you> How long does delivery take?
+bot> Estimated delivery times are shown at checkout and in your shipping confirmation email. Processing typically takes 1–2 business days before dispatch.
+
+you> The checkout page crashes when I click Pay.
+bot>
+[tool call] bugreports___create_bug_report
+<thinking> The customer has reported a bug with the checkout page. I need to collect the description, steps to reproduce, and environment to submit a bug report. </thinking>
+I need more details to report this issue. Please tell me the browser, operating system, and device you used.
+
+you> I add an item to the cart, go to checkout, and click Pay.
+bot> Thank you for the steps. Please tell me the browser, operating system, and device you used.
+
+you> linux ,fedora
+bot>
+[tool call] bugreports___create_bug_report
+<thinking> I now have the description, steps to reproduce, and environment. I can submit the bug report. </thinking> Thank you for the details. I have reported this issue with ticket ID 6c28d528-7b9e-4895-8575-306aab55d089.
+
+Evidence note: the final ticket was confirmed in DynamoDB. The first tool call
+occurred before the environment was provided; its result is not in this excerpt.
+The visible thinking text and premature call are documented in OBSERVATIONS.md.
+
+2. Out-of-scope request — earlier prompt version
+Source: previously supplied chat.py transcript, session
+a04b8550-b46a-4a19-a29e-0e88bab83988-support-chat.
+This is not a new test of the latest prompt.
+
+you> Can you recommend a movie to watch tonight?
+bot> I'm here to help with questions and issues related to our online shop. For movie recommendations, I suggest checking popular streaming services or movie review websites. If you have any more questions about our shop or need further assistance with a bug, feel free to ask!
+
+Evidence note: the reply recognized the scope boundary but did not follow the
+required human-support handoff consistently. This limitation is documented in
+OBSERVATIONS.md.
+
+3. Shop question not covered by the FAQ
+
+Source: screenshots/Screenshot From 2026-09-28 00-46-15.png
+Session: f6b8fc34-2656-4d89-ae03-ca405884712b-support-chat
+
+you> Do you offer gift wrapping?
+bot> The FAQ does not mention gift wrapping services. For inquiries about additional services like gift wrapping, please use the help/contact form on our site or reply to any order email.
+
+Evidence note: the chatbot acknowledged that the FAQ did not cover the question
+and referred the customer to human support without inventing a gift-wrapping policy.

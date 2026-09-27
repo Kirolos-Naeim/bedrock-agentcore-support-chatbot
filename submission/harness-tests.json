@@ -1,0 +1,19 @@
+{
+  "tests": [
+    {
+      "id": "faq-shipping-time",
+      "prompt": "How long does delivery take?",
+      "expected": "Answer from the FAQ: estimated delivery times are shown at checkout and in the shipping confirmation email; processing typically takes 1–2 business days before dispatch."
+    },
+    {
+      "id": "complete-checkout-bug-report",
+      "prompt": "Please file a bug report. Description: The checkout page crashes when I click Pay. Steps to reproduce: Add an item to the cart, go to checkout, and click Pay. Environment: Chrome 120 on macOS Sonoma using a MacBook.",
+      "expected": "Submit the bug report using the provided description, reproduction steps, and environment. Report success only if the tool returns a ticket ID."
+    },
+    {
+      "id": "out-of-scope-movie-request",
+      "prompt": "Can you recommend a movie to watch tonight?",
+      "expected": "Politely explain that you help with online-shop questions and website bugs, and direct the customer to the site's help/contact form or an order email."
+    }
+  ]
+}
