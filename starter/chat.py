@@ -3,10 +3,11 @@
 
     python chat.py
 
-Every run starts ONE conversation (one `runtimeSessionId`). The harness is
-stateful: as long as you reuse the same session id, it remembers the whole
+Every run starts ONE isolated conversation. The harness is stateful: as long
+as you reuse the same session and actor ids, it remembers the whole
 conversation — that is what lets it collect bug details over several turns.
-Start the script again to get a fresh conversation.
+Each run uses a fresh session and actor id to avoid retrieving another chat's
+long-term memories. Start the script again to get a fresh conversation.
 
 The script attaches your AgentCore Gateway to each invoke, so the model can
 call the create_bug_report tool. When it does, you'll see a line like:
@@ -18,6 +19,7 @@ Type your message and press Enter. Type 'quit' (or Ctrl-C) to exit.
 
 import argparse
 import json
+import re
 import sys
 import uuid
 from pathlib import Path
@@ -35,8 +37,34 @@ def event_stream(response):
     raise RuntimeError(f"No event stream in response: {list(response)}")
 
 
+def claims_report_created(text):
+    """Return whether the reply claims a bug report or ticket was created."""
+    success_phrases = (
+        "bug report has been created", "bug report was created",
+        "bug report has been filed", "bug report was filed",
+        "report has been created", "report was created",
+        "report has been filed", "report was filed",
+        "report has been submitted", "report was submitted",
+        "created a bug report", "filed a bug report",
+        "ticket has been created", "ticket was created",
+        "ticket has been filed", "ticket was filed",
+        "created a ticket", "filed a ticket", "ticket id",
+        "ticket number",
+    )
+    negation_phrases = (
+        "not ", "never ", "wasn't ", "hasn't ", "couldn't ",
+        "can't ", "cannot ", "unable to ", "failed to ",
+    )
+    normalized = text.casefold().replace("’", "'")
+    for sentence in re.split(r"[.!?\n]+", normalized):
+        if (any(phrase in sentence for phrase in success_phrases)
+                and not any(phrase in sentence for phrase in negation_phrases)):
+            return True
+    return False
+
+
 def invoke(rt, config, session_id, user_text, verbose=False):
-    """Send one user message; print the reply as it streams in.
+    """Send one user message and print the final reply.
 
     Returns the assistant's final text. Tool calls and tool results are
     handled server-side by the harness — we only watch them go by.
@@ -44,6 +72,9 @@ def invoke(rt, config, session_id, user_text, verbose=False):
     response = rt.invoke_harness(
         harnessArn=config["harness_arn"],
         runtimeSessionId=session_id,
+        # Keep long-term memory isolated per chat while preserving the
+        # current chat's context across turns.
+        actorId=session_id,
         # Pin the model on every invoke as well (belt and suspenders —
         # create_harness.py already pinned it on the harness).
         model={"bedrockModelConfig": {"modelId": config.get("model_id", "us.amazon.nova-pro-v1:0")}},
@@ -58,17 +89,20 @@ def invoke(rt, config, session_id, user_text, verbose=False):
 
     texts = []      # completed assistant messages
     buffer = []     # text of the message currently streaming
+    bug_report_tool_called = False
     for event in event_stream(response):
         if verbose:
             print(f"\n[event] {json.dumps(event, default=str)}", file=sys.stderr)
         if "contentBlockStart" in event:
             tool_use = event["contentBlockStart"].get("start", {}).get("toolUse")
             if tool_use:
-                print(f"\n[tool call] {tool_use.get('name', '?')}", flush=True)
+                tool_name = tool_use.get("name", "?")
+                if tool_name.endswith("create_bug_report"):
+                    bug_report_tool_called = True
+                print(f"\n[tool call] {tool_name}", flush=True)
         elif "contentBlockDelta" in event:
             delta = event["contentBlockDelta"].get("delta", {})
             if "text" in delta:
-                print(delta["text"], end="", flush=True)
                 buffer.append(delta["text"])
         elif "messageStop" in event:
             if buffer:
@@ -76,8 +110,16 @@ def invoke(rt, config, session_id, user_text, verbose=False):
                 buffer = []
     if buffer:
         texts.append("".join(buffer))
-    print()
-    return texts[-1] if texts else ""
+
+    reply = "".join(texts)
+    if not bug_report_tool_called and claims_report_created(reply):
+        reply = (
+            "I can't confirm that a bug report was submitted, so I don't have "
+            "a verified ticket ID. Please try again or contact support using "
+            "the help/contact form."
+        )
+    print(reply)
+    return reply
 
 
 def main():
